@@ -1,0 +1,17 @@
+[Unit]
+Description=Windhager-MQTT Client
+After=network.target
+
+[Service]
+Type=simple
+User=iot
+WorkingDirectory=/home/script/windhager
+Environment="INFLUX_DB=testing"
+Environment="INFLUX_USER=testing"
+Environment="INFLUX_PASS=testing"
+ExecStart=/home/script/windhager/windhager-influx.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+Alias=windhager-influx.service
