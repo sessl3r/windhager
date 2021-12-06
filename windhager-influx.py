@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-import datetime
+import math
 import os
 import sys
 import syslog
@@ -64,7 +64,8 @@ def loop():
 
         syslog.syslog(syslog.LOG_INFO, f"pushing {len(points)} values to influxdb")
         push_influx(points)
-        time.sleep(30)
+        while (int(time.time()) % 60):
+            time.sleep(1)
 
 def main():
     mq = init()
