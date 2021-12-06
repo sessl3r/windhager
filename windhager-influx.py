@@ -13,6 +13,7 @@ BLACKLIST = [
     "20-108"
 ]
 
+windhager_ip = os.getenv('WINDHAGER_IP')
 db = os.getenv('INFLUX_DB')
 user = os.getenv('INFLUX_USER')
 password = os.getenv('INFLUX_PASS')
@@ -35,7 +36,7 @@ def push_influx(points):
 
     client.write_points([body])
 
-def init(windhager_ip):
+def init():
     Windhager.init(windhager_ip)
     Windhager.init_xml()
 
@@ -66,7 +67,7 @@ def loop():
         time.sleep(30)
 
 def main():
-    mq = init("192.168.178.11")
+    mq = init()
     syslog.syslog(syslog.LOG_INFO, "service started")
     loop()
 
