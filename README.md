@@ -22,3 +22,9 @@ So I started to reverse-engineer a little here by just monitoring all unknown va
 Some are very easy because on the InfoWinTouch display some identical values are displayed.
 
 Also when a value was found I searched VarIdentTexte_de.xml for similar entries and noted the number as (XML: xxx)
+
+
+* Total Values: 178
+* Given Names: 111
+* Missing Names: 67
+* Found Meanings: 2
