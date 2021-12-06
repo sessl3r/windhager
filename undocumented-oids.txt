@@ -1,0 +1,2 @@
+41-72 : Maximale Gebläsedrehzahl (XML: 12-68)
+41-75 : Minimale Gebläsedrehzahl (XML: 12-67)
