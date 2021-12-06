@@ -50,15 +50,16 @@ def loop():
             if (not 'groupNr' in xdp or not 'memberNr' in xdp):
                 continue
             name = Windhager.get_name(xdp['groupNr'], xdp['memberNr'])
-            if not name:
-                name = f"{xdp['groupNr']}-{xdp['memberNr']}"
+            key = f"{xdp['groupNr']}-{xdp['memberNr']}"
+            if name:
+                key = f"{key}-{name}"
             if 'value' in xdp:
                 value = xdp['value']
             else:
                 value = None
             if value:
-                if name not in BLACKLIST:
-                    points.append((name,value))
+                if key not in BLACKLIST:
+                    points.append((key.replace(' ','-'),value))
 
         syslog.syslog(syslog.LOG_INFO, f"pushing {len(points)} values to influxdb")
         push_influx(points)
