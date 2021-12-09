@@ -1,5 +1,5 @@
 [Unit]
-Description=Windhager-MQTT Client
+Description=Windhager-Influx Client
 After=network.target
 
 [Service]
