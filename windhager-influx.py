@@ -39,6 +39,8 @@ def push_influx(points):
 def init():
     Windhager.init(windhager_ip)
     Windhager.init_xml()
+    # Force all values into cache to be present in datapoints
+    Windhager.get_lookup_all()
 
 def loop():
     while True:
