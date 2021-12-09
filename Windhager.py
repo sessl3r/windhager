@@ -99,45 +99,19 @@ def getWindyndataReadDapDapId (subnet, node, dap):
     return _jget(WINDYNDATA_API + '/windyndata/' + subnet + '/' + node + '/2/' + dap)
 
 ## Lookup API Wrappers
-def get_lookup(objs):
-    ret = []
-    for o in objs:
-        ret.append(_jget(LOOKUP_API + o))
-    return ret
-
+def get_lookup(obj):
+    return _jget(f"{LOOKUP_API}/{obj}")
 
 def get_lookup_all():
-    jtop = get_lookup([''])[0]
-    nodes = []
-    subnodes = []
-    objects = []
-    for t in jtop:
-        n = '/' + str(t['nodeId']) + '/0'
-        nodes.append(n)
-
-    jnode = get_lookup(nodes)
-    for n in nodes:
-        for j in jnode:
-            for jid in j:
-                s = n + '/' + str(jid['id'])
-                subnodes.append(s)
-
-    oids = []
-    i = 0
-    for s in subnodes:
-        res = get_lookup([s])[0]
-        i = i + 1
-        if (i > 10):
-            break
-        for r in res:
-            if 'OID' not in r:
-                print(r)
-                continue
-            else:
-                oids.append(r['OID'])
-
-    for o in oids:
-        print(_get(DATAPOINT_API + o))
+    ret = []
+    for api in ['15/0', '60/0', '90/0']:
+        nodes = get_lookup(api)
+        for node in nodes:
+            tmp = f"{api}/{node['id']}"
+            fcts = get_lookup(tmp)
+            for fct in fcts:
+                ret.append(fct)
+    return ret
 
 
 def get_datapoints():
