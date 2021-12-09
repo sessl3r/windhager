@@ -113,6 +113,8 @@ def get_lookup_all():
                 ret.append(fct)
     return ret
 
+def get_datapoint(p):
+    return _jget('api/1.0/datapoint/' + p)
 
 def get_datapoints():
     jget = _jget('api/1.0/datapoints')
