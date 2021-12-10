@@ -4,65 +4,61 @@ import time
 import math
 import os
 import sys
+import argparse
 import syslog
 import Windhager
 
 from influxdb import InfluxDBClient
 
-BLACKLIST = [
-    "20-108"
-]
+OIDS = []
 
-windhager_ip = os.getenv('WINDHAGER_IP')
-db = os.getenv('INFLUX_DB')
-user = os.getenv('INFLUX_USER')
-password = os.getenv('INFLUX_PASS')
+parser = argparse.ArgumentParser()
+parser.add_argument('--windhager', type=str, required=True, help='Windhager IP/Host')
+parser.add_argument('--db', type=str, required=True, help='Influx Database')
+parser.add_argument('--dbuser', type=str, required=True, help='Influx Database User')
+parser.add_argument('--dbpass', type=str, required=True, help='Influx Database Password')
+parser.add_argument('--oids', type=str, default='oids.txt', help='File with list of OIDs')
+args = parser.parse_args()
 
-client = InfluxDBClient('localhost', 8086, db, user, password)
-
+client = InfluxDBClient('localhost', 8086, database=args.db, username=args.dbuser, password=args.dbpass)
 syslog.openlog(facility=syslog.LOG_DAEMON)
 
 def push_influx(points):
-    body = {
-        "measurement": "windhager",
-        "fields": { }
-    }
+    bodys = []
     for p in points:
-        try:
-            value = float(p[1])
-        except:
-            continue
-        body['fields'][p[0]] = value
-
-    client.write_points([body])
+        bodys.append({
+            "measurement": f"windhager-{p[0]}",
+            "fields": { 'value': p[1] }
+        })
+    client.write_points(bodys)
 
 def init():
-    Windhager.init(windhager_ip)
+    global OIDS
+    with open(args.oids, 'r') as fd:
+        lines = fd.readlines()
+    OIDS = [line.split(',')[0].rstrip() for line in lines]
+
+    Windhager.init(args.windhager)
     Windhager.init_xml()
-    # Force all values into cache to be present in datapoints
-    Windhager.get_lookup_all()
 
 def loop():
     while True:
         points = []
-        dps = Windhager._jget("api/1.0/datapoints")
-        for dp in dps:
-            if not 'OID' in dp:
+        for oid in OIDS:
+            dp = Windhager.get_lookup(oid)
+            if 'name' not in dp:
                 continue
-            xdp = Windhager._jget("api/1.0/datapoint" + dp['OID'])
-            if (not 'groupNr' in xdp or not 'memberNr' in xdp):
+            if 'value' not in dp:
                 continue
-            name = Windhager.get_name(xdp['groupNr'], xdp['memberNr'])
-            key = f"{xdp['groupNr']}-{xdp['memberNr']}"
+            key = f"{dp['groupNr']}-{dp['memberNr']}"
+            try:
+                value = float(dp['value'])
+            except:
+                continue
+            name = Windhager.get_name(dp['groupNr'], dp['memberNr'])
             if name:
-                key = f"{key}-{name}"
-            if 'value' in xdp:
-                value = xdp['value']
-            else:
-                value = None
-            if value:
-                if key not in BLACKLIST:
-                    points.append((key.replace(' ','-'),value))
+                name = name.replace(' ','-')
+                points.append((f"{key}-{name}", value))
 
         syslog.syslog(syslog.LOG_INFO, f"pushing {len(points)} values to influxdb")
         push_influx(points)

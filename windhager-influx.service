@@ -6,11 +6,7 @@ After=network.target
 Type=simple
 User=iot
 WorkingDirectory=/home/script/windhager
-Environment="WINDHAGER_IP=192.168.178.11"
-Environment="INFLUX_DB=testing"
-Environment="INFLUX_USER=testing"
-Environment="INFLUX_PASS=testing"
-ExecStart=/home/script/windhager/windhager-influx.py
+ExecStart=/home/script/windhager/windhager-influx.py --windhager <> --db <> --dbuser <> --dbpass <>
 Restart=always
 
 [Install]
