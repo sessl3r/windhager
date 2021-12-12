@@ -5,6 +5,8 @@ import xml.etree.ElementTree as etree
 import requests
 from requests.auth import HTTPDigestAuth
 
+# Hack to not need a Class
+# TODO: change to a Class...
 this = sys.modules[__name__]
 this.ip = None
 
@@ -12,13 +14,7 @@ this.user = 'Service'
 this.pw = '123'
 
 ######### Constants
-
-##  Allgemein
 LOOKUP = 'api/1.0/lookup/'
-
-## Fehlerlog
-FEHLERLOG_API = 'InfoWinFehlerlog/api/1.0'
-WINDYNDATA_API = 'WsFUP7030/api/1.0'
 LOOKUP_API = 'api/1.0/lookup'
 DATAPOINT_API = 'api/1.0/datapoint'
 
@@ -43,9 +39,6 @@ def request_put(url, data, headers):
             data=json.dumps(data),
             headers = headers,
             auth = this.auth)
-
-def request_delete(url):
-    return requets.delete(f"{this.url}/{url}", auth=this.auth)
 
 def get_xml():
     return this.xml
@@ -75,29 +68,6 @@ def _put (api, data, headers = None):
         headers = {'Content-Type': "text/plain; charset=UTF-8"}
     resp = this.request_put(api, data, headers)
     return resp
-
-def _del (api, data):
-    resp = this.request_delete(api)
-    return resp
-
-## Fehlerlog API Wrappers
-def get_fehlerlog ():
-    return _jget(FEHLERLOG_API + 'fehlerlog')
-
-def del_fehlerlog (id):
-    fl = get_fehlerlog()
-    if (id not in fl):
-        return None
-
-    data = {'id': id}
-    return _del(FEHLERLOG_API + 'fehlerlog', data)
-
-def lvl_fehlerlog ():
-    pass
-
-## WsFUP7030 API Wrappers
-def getWindyndataReadDapDapId (subnet, node, dap):
-    return _jget(WINDYNDATA_API + '/windyndata/' + subnet + '/' + node + '/2/' + dap)
 
 ## Lookup API Wrappers
 def get_lookup(obj):
