@@ -27,8 +27,7 @@ DATAPOINT_API = 'api/1.0/datapoint'
 ## INIT
 def init(ip, user = 'Service', pw = '123'):
     this.url = 'http://' + ip
-    this.session = requests.session()
-    this.session.auth = HTTPDigestAuth(this.user, this.pw)
+    this.auth = HTTPDigestAuth(this.user, this.pw)
     this.xml = None
     this.init_xml()
 
@@ -37,15 +36,16 @@ def init_xml():
     this.xml = etree.fromstring(resp.text.encode('utf-8'))
 
 def request_get(url, params = None):
-    return this.session.get(f"{this.url}/{url}", params = params)
+    return requests.get(f"{this.url}/{url}", params = params, auth = this.auth)
 
 def request_put(url, data, headers):
-    return this.session.put(f"{this.url}/{url}",
+    return requests.put(f"{this.url}/{url}",
             data=json.dumps(data),
-            headers = headers)
+            headers = headers,
+            auth = this.auth)
 
 def request_delete(url):
-    return this.session.delete(f"{this.url}/{url}")
+    return requets.delete(f"{this.url}/{url}", auth=this.auth)
 
 def get_xml():
     return this.xml
@@ -105,7 +105,7 @@ def get_lookup(obj):
 
 def get_lookup_all():
     ret = []
-    for api in ['1/15/0', '1/60/0', '1/90/0']:
+    for api in ['/1/15/0', '/1/60/0', '/1/90/0']:
         nodes = get_lookup(api)
         for node in nodes:
             tmp = f"{api}/{node['id']}"
