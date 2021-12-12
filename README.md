@@ -68,10 +68,10 @@ Auch durch anpassen der Parameter für WW (Zeiten, Höhe usw.) konnte die Situat
 Dieses Skript nutzt Werte der BioWin um ein Relais (Tasmota) zu steuern welches parallel die WW-Ladepumpe schalten kann (die BioWin kann dies weiterhin auch noch!).
 Die Schaltung hierfür sollte selbsterklärend sein.
 
-Die Steuerung der BioWin selbst hat nun tagsüber eine WW-Temperatur-Einstellung von 42° und nachts für 32°. Dies führt dazu, dass in Kombination mit diesem Skript keine WW-Anforderungen mehr durch die BioWin erzeugt werden.
+Die BioWin WW-Temperaturangaben habe ich etwas verringert - aber durch die eingestellte Hysterese in der Heizung von -8K musste hier nur minimal angepasst werden.
+Die WW-Anforderung der BioWin ist irgenwann vorbei. Normal würde hier der Überschwinger kommen. Hier schreitet nun dieses Skript ein in dem es folgendes tut:
 
-Um nun dennoch WW zu haben wird die WW-Ladepumpe von diesem Skript und folgenden Bedingungen zugeschaltet (Kesselleistung > 0):
-
+Eingeschaltet wird die WW-Ladepumpe wenn:
 * WW-Temperatur < ww_on oder
 * Kesseltemperatur > kessel_max oder
 * Kesselleitung < leistung_min
@@ -82,12 +82,20 @@ Abgeschaltet wird die WW-Ladepumpe wenn:
 * Kesseltemperatur < kessel_min oder
 * Kesselleitung > leistung_max
 
-Somit ist über den Tag gesehen immer WW verfügbar und der Brenner kann deutlich längere und weniger Zyklen fahren. Die recht frühe Abschaltung der Pumpe ist nötig damit der Kessel die Leistung nicht erhöht. Leider regelt diese nur sehr ungern runter (was verständlich ist).
+Dies hat zusätzlich zu der längeren Laufzeit den sehr scharmanten Vorteil, dass der WW-Speicher immer wieder etwas nachgeladen wird. Wird nun unter Tag viel WW Verbraucht muss die Heizung nicht erst zünden sondern schiebt einfach etwas Energie nach die vermutlich sowieso gerade zuviel ist.
 
 ## Ergebnisse:
 
-* [Erste manuelle Versuche](screenshots/20211203_wwoverride_manul_first_try.png)
-  Hier wurde nur nebenzu die WW-Ladepumpe manuell geschaltet um ein erstes Gefühl zu bekommen. Aktiv war dies zwischen 8:00 bis 11:00 wobei ich ich den letzten Peak leider etwas zuspät abgefangen hatte. Am Nachmittag zwischen 15 und 17:00 Uhr. Auch hier habe ich beim letzten Peak zu langsam reagiert und gleich eine Zündung wegen veränderung des WW-Soll hinter her bekommen.
+### Erste manuelle Experimente
 
-* [Erste zwei Tage](screenshots/20211211_ww_override.png)
+Hier wurde nur nebenzu die WW-Ladepumpe manuell geschaltet um ein erstes Gefühl zu bekommen. Aktiv war dies zwischen 8:00 bis 11:00 wobei ich ich den letzten Peak leider etwas zuspät abgefangen hatte. Am Nachmittag zwischen 15 und 17:00 Uhr. Auch hier habe ich beim letzten Peak zu langsam reagiert und gleich eine Zündung wegen veränderung des WW-Soll hinter her bekommen.
+
+![Erste manuelle Versuche](screenshots/20211203_wwoverride_manul_first_try.png)
+
+### Erste 1,5 Tage mit dem Skript
+
+Zu sehen sind vier Starts in zwei Tagen. Der Morgentliche ist natürlich länger (6 Stunden, maximum der BioWin wie es scheint). Der am Nachmittag wird wohl nutzungsabhängig sein.
+Noch zu untersuchen ist wie der Pelletverbrauch sich im Vergleich zu vorher entwickelt. Hierfür muss das ganze aber erst einmal eine Weile laufen.
+
+![Erste zwei Tage](screenshots/20211211_ww_override.png)
 
