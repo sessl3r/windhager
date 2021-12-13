@@ -99,3 +99,13 @@ Noch zu untersuchen ist wie der Pelletverbrauch sich im Vergleich zu vorher entw
 
 ![Erste zwei Tage](screenshots/20211211_ww_override.png)
 
+
+
+# Bekannte Probleme
+
+## Zündung Ausbrand durch Brennstoffanforderung
+
+System ist auf Brennstoffanforderung mit Vorgabezeit von 11:00 bis 15:00 Uhr eingestellt.
+Zündet die Heizung kurz vor 15:00 (Ende der Freigabezeit) fällt ihr anscheinend kurz danach auf, dass sie noch Brennstoff braucht und geht direkt in den Ausbrand.
+
+![Zündung Ausbrand](screenshots/20211212_ausbrand_bei_brennstoffanforderung.png)
