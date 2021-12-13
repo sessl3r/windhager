@@ -16,23 +16,27 @@ Laut Anleitung, default:
 * User: User ; Password: 123
 * User: Service ; Password: 123
 
-# Windhager.py
+# Logging
 
-Implementiert ein paar get/set Befehle zur Benutzung der HTTP-API des InfoWin.
-Die API ist unter <windhager-ip>/api-docs Dokumentiert.
+Das wichtigste Thema dieses Projekts ist das Logging der Daten der Heizung um diese evtl. zu optimieren oder zumindest Probleme zu erkennen.
+Mit unten genanntem Skript windhager-influx kann dies realisiert werden sofern eine oids.txt verfügbar ist.
+Eine Liste mit allen im Setup verfügbaren Datenpunkten kann mit dem Skript windhager-getall.py erstellt werden:
 
-Die wichtigsten Endpunkte sind /api/1.0/lookup und /api/1.0/datapoint{s}
+    $ ./windhager-getall.py --windhager <ip-address> > oids_all.txt
 
-Ich habe bisher davon abgesehen die weiteren APIs zu nutzen. Insbesondere alles was Werte ändern angeht habe ich gelassen.
+Diese Liste sollte danach ausgedünnt werden da zumindest bei mir viele Datenpunkte nicht relevant oder zum Teil auch einfach doppelt vorhanden sind.
+Beispielhaft ist die in meinem System verwendete oids.txt im Projekt hinterlegt.
 
-# windhager-influx.py
+## windhager-influx.py
 
 Simples Skript welches die Datenpunkte welche in oids.txt (--oids) gelistet sind regelmäßig abfragt und in eine InfluxDB schreibt.
 In meinem Fall werden die Daten per Grafana visualisiert:
 
+Um dieses Skript der systemd automatisch zu starten kann die Datei `windhager-influx.service` genutzt werden. Dieses muss dazu nach z.B. `/etc/systemd/system/` kopiert werden.
+
 ![Grafana Beispiel](screenshots/20211129_grafana_beispiel.png)
 
-# Undokummentierte Parameter im Webinterface
+## Undokummentierte Parameter im Webinterface
 
 ![Webinterface Unbekannte Parameter](screenshots/20211203_webif_unbekannt.png)
 
@@ -103,9 +107,12 @@ Noch zu untersuchen ist wie der Pelletverbrauch sich im Vergleich zu vorher entw
 
 # Bekannte Probleme
 
+Hier werden bisher beobachtete Eigenheiten bzw. Probleme mit der Heizung aufgelistet und falls vorhanden Lösungen beschrieben.
+
 ## Zündung Ausbrand durch Brennstoffanforderung
 
 System ist auf Brennstoffanforderung mit Vorgabezeit von 11:00 bis 15:00 Uhr eingestellt.
 Zündet die Heizung kurz vor 15:00 (Ende der Freigabezeit) fällt ihr anscheinend kurz danach auf, dass sie noch Brennstoff braucht und geht direkt in den Ausbrand.
 
 ![Zündung Ausbrand](screenshots/20211212_ausbrand_bei_brennstoffanforderung.png)
+
