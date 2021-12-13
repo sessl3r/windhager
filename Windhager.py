@@ -1,108 +1,180 @@
 import sys
-import time
+import logging
 import json
 import xml.etree.ElementTree as etree
 import requests
 from requests.auth import HTTPDigestAuth
 
-# Hack to not need a Class
-# TODO: change to a Class...
-this = sys.modules[__name__]
-this.ip = None
+class Windhager:
+    """ Helper functions to interact with the Windhager InfoWin API
+    as documented in self.ip/api-docs
 
-this.user = 'Service'
-this.pw = '123'
+    The default User/Password are given in the user manual.
+    If using the myComfort App the password will be changed by Windhager!
 
-######### Constants
-LOOKUP = 'api/1.0/lookup/'
-LOOKUP_API = 'api/1.0/lookup'
-DATAPOINT_API = 'api/1.0/datapoint'
+    :param hostname: Host or IP of InfoWin device
+    :param user: Username to Authenticate (from Usermanual)
+    :param password: Password to Authenticate (from Usermanual)
 
-######### Functions
+    """
 
-## INIT
-def init(ip, user = 'Service', pw = '123'):
-    this.url = 'http://' + ip
-    this.auth = HTTPDigestAuth(this.user, this.pw)
-    this.xml = None
-    this.init_xml()
+    LOOKUP_API = 'api/1.0/lookup'
+    DATAPOINT_API = 'api/1.0/datapoint'
+    DATAPOINTS_API = 'api/1.0/datapoints'
 
-def init_xml():
-    resp = this.request_get('res/xml/VarIdentTexte_de.xml')
-    this.xml = etree.fromstring(resp.text.encode('utf-8'))
+    def __init__(self, hostname, user = 'Service', password = '123', level='INFO'):
+        self._host = hostname
+        self._user = user
+        self._password = password
+        self._xml = None
+        self.auth = HTTPDigestAuth(user, password)
 
-def request_get(url, params = None):
-    return requests.get(f"{this.url}/{url}", params = params, auth = this.auth)
+        # configure logging
+        logging.basicConfig()
+        self.log = logging.getLogger(__name__)
+        self.log.setLevel(level)
 
-def request_put(url, data, headers):
-    return requests.put(f"{this.url}/{url}",
-            data=json.dumps(data),
-            headers = headers,
-            auth = this.auth)
+        # check connectivity to device
+        self.get('api-docs/')
 
-def get_xml():
-    return this.xml
+    def get(self, api, params = None, timeout=2):
+        """ Issue a get request to InfoWin
 
-def get_name(gn, mn):
-    gn = int(gn)
-    mn = int(mn)
-    if (this.xml is None):
-        return "unknown"
-    e = this.xml.find('gn[@id="' + str(gn) + '"]/mn[@id="' + str(mn) + '"]')
-    if e is not None:
-        if e.text is not None:
-            return e.text
-    return None
+        :param api: The API string to use
+        :param params: Parameters to add to the GET request
+        :param timeout: Timeout in seconds
 
-## Basic requests wrapper
-def _get (api, params = None):
-    resp = this.request_get(api, params = params)
-    return resp.text
+        """
 
-def _jget (api, params = None):
-    res = _get(api, params)
-    return json.loads(res)
+        r = requests.get(f"http://{self._host}/{api}", params, auth = self.auth)
+        self.log.debug(f"GET http://{self._host}/{api} returned {r.status_code}")
+        if r.status_code != 200:
+            self.log.warning(f"GET http://{self._host}/{api} params={params} returned {r.status_code}, retrying once")
+        try:
+            return json.loads(r.text)
+        except:
+            return r.text
 
-def _put (api, data, headers = None):
-    if not headers:
-        headers = {'Content-Type': "text/plain; charset=UTF-8"}
-    resp = this.request_put(api, data, headers)
-    return resp
+    def get_lookup(self, obj = None):
+        """ Issue a request to lookup API
 
-## Lookup API Wrappers
-def get_lookup(obj):
-    return _jget(f"{LOOKUP_API}{obj}")
+        From api-docs for GET:
+            lookup/{subnetId}/{nodeId}/{fctNV}/0/{nvIndex}
+        """
 
-def get_lookup_all():
-    ret = []
-    for api in ['/1/15/0', '/1/60/0', '/1/90/0']:
-        nodes = get_lookup(api)
-        for node in nodes:
-            tmp = f"{api}/{node['id']}"
-            fcts = get_lookup(tmp)
-            for fct in fcts:
-                ret.append(fct)
-    return ret
+        if obj:
+            return self.get(f"{self.LOOKUP_API}/{obj}")
+        else:
+            return self.get(self.LOOKUP_API)
 
-def get_datapoint(p):
-    return _jget(DATAPOINT_API + p)
+    def get_lookup_all(self):
+        """ Recursive lookup scan """
+        ret = []
 
-def get_datapoints():
-    jget = _jget('api/1.0/datapoints')
-    res = []
-    for p in jget:
-        name = ""
-        value = ""
-        oid = ""
-        if 'name' not in p:
-            res.append(p)
-            continue
-        name = p['name']
-        aname = name.split('-')
+        # Get root node - should always be /1
+        subnetIds = self.get_lookup()
+        if not subnetIds:
+            self.log.error("get_lookup_all: No subnetIds found!")
+            return None
 
-        text = get_name(int(aname[0]), int(aname[1]))
-        if (text is not None):
-            p['text'] = text.lower().replace(' ', '-').replace('ä', "ae").replace('ö', "oe").replace('ü', "ue").replace('ß', 's')
+        # Iterate over all subnets
+        for subnet in subnetIds:
+            nodeIds = []
+            nodeResp = self.get_lookup(subnet)
+            for resp in nodeResp:
+                if 'nodeId' in resp:
+                    nodeIds.append(resp['nodeId'])
 
-        res.append(p)
-    return res
+            # Iterate over all nodes
+            for node in nodeIds:
+                fctIds = []
+                fctResp = self.get_lookup(f"{subnet}/{node}")
+                if not 'functions' in fctResp:
+                    self.log.error(f"Malformed fctResp, no functions found: {fctResp}")
+                    return None
+                for resp in fctResp['functions']:
+                    if 'fctId' in resp:
+                        fctIds.append(resp['fctId'])
+
+                # Iterate over all functions
+                for fct in fctIds:
+                    subfctIds = []
+                    subfctResp = self.get_lookup(f"{subnet}/{node}/{fct}")
+                    for resp in subfctResp:
+                        if 'id' in resp:
+                            subfctIds.append(resp['id'])
+
+                    # Iterate over all subfunctions
+                    for subfct in subfctIds:
+                        nvResp = self.get_lookup(f"{subnet}/{node}/{fct}/{subfct}")
+                        for nv in nvResp:
+                            ret.append(nv)
+
+        return ret
+
+    def get_datapoint(self, obj):
+        """ Issue a request to datapoint API
+
+        From api-docs for GET:
+            /datapoint/{subnetId}/{nodeId}/{fctId}/{groupId}/{memberId}/{varInst}
+            /datapoint/{subnetId}/{nodeId}/{fctNV}/0/{nvIndex}/0
+
+        """
+
+        return self.get(f"{self.DATAPOINT_API}/{obj}")
+
+    def get_datapoints(self):
+        """ Issue a request to datapoints API
+
+        TODO: per api-docs a param OID giving one or multiple OIDs should be supported.
+            I did not get this working but always got Bad Gateway Errors. Need to revisit!
+
+        """
+
+        return self.get(f"{self.DATAPOINTS_API}")
+
+    def get_datapoints_with_name(self):
+        """ Get all (cached) datapoints and lookup the name -> text in the XML file """
+        dps = get_datapoints()
+        res = []
+        for dp in dps:
+            name = ""
+            value = ""
+            oid = ""
+            if 'name' not in dp:
+                res.append(dp)
+                continue
+            name = p['name']
+            try:
+                gN = int(p['name'].split('-')[0])
+                mN = int(p['name'].split('-')[1])
+            except:
+                self.log.error(f"Malformed name: '{p['name']}' in datapoint {dp}")
+
+            text = self.id_to_string(gN, mN)
+            if text:
+                p['text'] = text
+            res.append(dp)
+        return res
+
+    @property
+    def xml(self):
+        """ Retrieve VarIdentTexte as parsed XML """
+        if not self._xml:
+            resp = self.get('res/xml/VarIdentTexte_de.xml')
+            if not resp:
+                self.log.error("Failed to get VarIdentTexte_de.xml")
+            else:
+                self._xml = etree.fromstring(resp.encode('utf-8'))
+        return self._xml
+
+    def id_to_string(self, gn, mn):
+        """ Convert groupNr + memberNr to Text found in XML file if any """
+        gn = int(gn)
+        mn = int(mn)
+        e = self.xml.find('gn[@id="' + str(gn) + '"]/mn[@id="' + str(mn) + '"]')
+        if e is not None:
+            if e.text is not None:
+                return e.text.strip()
+        return None
+
