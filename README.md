@@ -36,21 +36,6 @@ Um dieses Skript der systemd automatisch zu starten kann die Datei `windhager-in
 
 ![Grafana Beispiel](screenshots/20211129_grafana_beispiel.png)
 
-## Undokummentierte Parameter im Webinterface
-
-![Webinterface Unbekannte Parameter](screenshots/20211203_webif_unbekannt.png)
-
-Im Web-Interface des InfoWin-Touch gibt es leider etliche Einträge "Unbekannte Ebene" bzw. "Unbekannter Wert" (siehe).
-Leider konnte auch der Windhager-Support (technik@de.windhager.com) hier keine Abhilfe bieten da diesem hierzu selbst keine Dokumentation vorliegen würde. Es sei ein Feuerungsautomat verbaut welche in der Weboberfläche nicht eingepflegt wurde. Ganz wichtig: "Dei Funktion ist hier vollumfänglich gegeben" (das ist doch ein Kundenservice).
-
-Aus diesem Grund wurden per windhager-influx.py für ein paar Wochen jedgliche Parameter aufgezeichnet und versucht deren Bedeutung heraus zu finden.
-
-* Anzahl Werte gesamt: 144
-* Anzahl Werte mit Namen: 111
-* Anzahl Unbekannter Werte: 67
-
-Auch sehr ärgerlich: Manche Parameter bei denen 'writeProtect' = False ist lassen sich nicht ändern. Stattdessen läuft der Request in einen Timeout mit Bad Gateway Error.
-
 # Warmwasser / Brennerstarts Optimierung
 
 Skript: ww-override.py
@@ -130,3 +115,20 @@ Es scheinen einige OIDs nicht im Rekursiven Lookup zugänglich zu sein. Bisher h
 Ein Brute-Force habe ich bisher nur sehr vorsichtig gemacht, da die Nutzung der API das ganze InfoWin sehr langsam macht (Display extremst Träge).
 
 Zusätzlich ist mir aufgefallen, dass die fctID der OID zumindest für den Feuerungsautomaten eine 7-Bit Addresse zu sein scheint, deren Überlauf NICHT abgefangen wird es aber nicht zu einem Crash kommt sondern die %256 OID geliefert wird. Ein Request (noch nicht klar welcher) hat das InfoWin aber auch zum Reboot gebracht.
+
+## Undokummentierte Parameter im Webinterface
+
+![Webinterface Unbekannte Parameter](screenshots/20211203_webif_unbekannt.png)
+
+Im Web-Interface des InfoWin-Touch gibt es leider etliche Einträge "Unbekannte Ebene" bzw. "Unbekannter Wert" (siehe).
+Leider konnte auch der Windhager-Support (technik@de.windhager.com) hier keine Abhilfe bieten da diesem hierzu selbst keine Dokumentation vorliegen würde. Es sei ein Feuerungsautomat verbaut welche in der Weboberfläche nicht eingepflegt wurde. Ganz wichtig: "Dei Funktion ist hier vollumfänglich gegeben" (das ist doch ein Kundenservice).
+
+Aus diesem Grund wurden per windhager-influx.py für ein paar Wochen jedgliche Parameter aufgezeichnet und versucht deren Bedeutung heraus zu finden.
+
+* Anzahl Werte gesamt: 144
+* Anzahl Werte mit Namen: 111
+* Anzahl Unbekannter Werte: 67
+
+Auch sehr ärgerlich: Manche Parameter bei denen 'writeProtect' = False ist lassen sich nicht ändern. Stattdessen läuft der Request in einen Timeout mit Bad Gateway Error.
+
+
