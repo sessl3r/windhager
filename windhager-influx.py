@@ -30,16 +30,8 @@ def push_influx(db, points):
 def loop(w, db, oids):
     while True:
         points = []
-        dps = w.get_datapoints()
-        w.log.debug(f"Got {len(dps)} Datapoints from API")
         for oid,key in oids.items():
-            d = None
-            for dp in dps:
-                if dp['OID'] == '/' + oid:
-                    d = dp
-            if not d:
-                w.log.warning("OID {oid} not found in datapoints, executing lookup")
-                d = w.get_lookup(oid)
+            d = w.get_datapoint(oid)
             if 'value' not in d:
                 w.log.warning(f"Invalid data for {oid}: {dp}")
                 continue
