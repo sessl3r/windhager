@@ -114,5 +114,19 @@ Hier werden bisher beobachtete Eigenheiten bzw. Probleme mit der Heizung aufgeli
 System ist auf Brennstoffanforderung mit Vorgabezeit von 11:00 bis 15:00 Uhr eingestellt.
 Zündet die Heizung kurz vor 15:00 (Ende der Freigabezeit) fällt ihr anscheinend kurz danach auf, dass sie noch Brennstoff braucht und geht direkt in den Ausbrand.
 
+Antwort 13.12.2021 Windhager:
+
+    wenn sie eine Freigabezeit von 12 – 15 Uhr hinterlegt habt wird der Kessel immer um kurz vor 15 Uhr in den Ausbrand gehen um eine Befüllung vor der Sperrzeit zu machen.
+
+    Bild der Anleitung Kapitle "mit Freigabezeit" - markierung auf "Am Ende der Freigabezeit wird der Vorratsbehälter, falls notwendig, nochmals voll befüllt."
+
+    Mit 3 Stunden Saugzeit kann es passieren das der Tagesbehälter leerläuft.
+
 ![Zündung Ausbrand](screenshots/20211212_ausbrand_bei_brennstoffanforderung.png)
 
+## Nicht alle OIDs per Lookup zugänglich
+
+Es scheinen einige OIDs nicht im Rekursiven Lookup zugänglich zu sein. Bisher habe ich hier das Saugzuggebläse gefunden.
+Ein Brute-Force habe ich bisher nur sehr vorsichtig gemacht, da die Nutzung der API das ganze InfoWin sehr langsam macht (Display extremst Träge).
+
+Zusätzlich ist mir aufgefallen, dass die fctID der OID zumindest für den Feuerungsautomaten eine 7-Bit Addresse zu sein scheint, deren Überlauf NICHT abgefangen wird es aber nicht zu einem Crash kommt sondern die %256 OID geliefert wird. Ein Request (noch nicht klar welcher) hat das InfoWin aber auch zum Reboot gebracht.
