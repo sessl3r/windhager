@@ -49,7 +49,7 @@ class Windhager:
         r = requests.get(f"http://{self._host}/{api}", params, auth = self.auth)
         self.log.debug(f"GET http://{self._host}/{api} returned {r.status_code}")
         if r.status_code != 200:
-            self.log.warning(f"GET http://{self._host}/{api} params={params} returned {r.status_code}, retrying once")
+            raise Exception
         try:
             return json.loads(r.text)
         except:
@@ -99,14 +99,20 @@ class Windhager:
                 # Iterate over all functions
                 for fct in fctIds:
                     subfctIds = []
-                    subfctResp = self.get_lookup(f"{subnet}/{node}/{fct}")
+                    try:
+                        subfctResp = self.get_lookup(f"{subnet}/{node}/{fct}")
+                    except:
+                        continue
                     for resp in subfctResp:
                         if 'id' in resp:
                             subfctIds.append(resp['id'])
 
                     # Iterate over all subfunctions
                     for subfct in subfctIds:
-                        nvResp = self.get_lookup(f"{subnet}/{node}/{fct}/{subfct}")
+                        try:
+                            nvResp = self.get_lookup(f"{subnet}/{node}/{fct}/{subfct}")
+                        except:
+                            continue
                         for nv in nvResp:
                             ret.append(nv)
 
