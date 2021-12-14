@@ -1,2 +1,3 @@
-41-72 : Maximale Gebläsedrehzahl (XML: 12-68)
-41-75 : Minimale Gebläsedrehzahl (XML: 12-67)
+# Dokumentiert aber nicht im Lookup zu finden
+1/60/0/23/88/0,23-88,Saugzuggebläse-Soll,1234
+1/60/0/23/89/0,23-89,Saugzuggebläse-Ist,1234

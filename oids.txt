@@ -53,3 +53,5 @@
 1/60/0/20/63/0,20-63,Laufzeit-bis-Wartung,5618
 1/60/0/23/103/0,23-103,Pelletsverbrauch-gesamt,10.35
 1/15/1/3/58/0,3-58,Korrekturwert,0.0
+1/60/0/23/88/0,23-88,Saugzuggebläse-Soll,1234
+1/60/0/23/89/0,23-89,Saugzuggebläse-Ist,1234
