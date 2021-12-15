@@ -56,3 +56,6 @@
 1/60/0/23/88/0,23-88,Saugzuggebläse-Soll,1234
 1/60/0/23/89/0,23-89,Saugzuggebläse-Ist,1234
 1/60/0/43/42/0,43-42,Füllstand-Tagesbehälter,88
+1/60/0/43/6/0,43-6,Unterdruck-Soll,0
+1/60/0/43/7/0,43-7,Unterdruck-Ist,0
+1/60/0/43/8/0,43-8,Pelletförderung-pro-Stunde,0
