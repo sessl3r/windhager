@@ -116,6 +116,8 @@ Ein Brute-Force habe ich bisher nur sehr vorsichtig gemacht, da die Nutzung der 
 
 Zusätzlich ist mir aufgefallen, dass die fctID der OID zumindest für den Feuerungsautomaten eine 7-Bit Addresse zu sein scheint, deren Überlauf NICHT abgefangen wird es aber nicht zu einem Crash kommt sondern die %256 OID geliefert wird. Ein Request (noch nicht klar welcher) hat das InfoWin aber auch zum Reboot gebracht.
 
+Gefunden wurde mittlerweile eine Liste von OIDs die weder Dokumentiert noch im Lookup sind im Feuerungsautomaten (see oids_60_arange_d0_9.txt)
+
 ## Undokummentierte Parameter im Webinterface
 
 ![Webinterface Unbekannte Parameter](screenshots/20211203_webif_unbekannt.png)
@@ -130,5 +132,4 @@ Aus diesem Grund wurden per windhager-influx.py für ein paar Wochen jedgliche P
 * Anzahl Unbekannter Werte: 67
 
 Auch sehr ärgerlich: Manche Parameter bei denen 'writeProtect' = False ist lassen sich nicht ändern. Stattdessen läuft der Request in einen Timeout mit Bad Gateway Error.
-
 
