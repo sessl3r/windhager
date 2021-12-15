@@ -109,14 +109,20 @@ Antwort 13.12.2021 Windhager:
 
 ![Zündung Ausbrand](screenshots/20211212_ausbrand_bei_brennstoffanforderung.png)
 
-## Nicht alle OIDs per Lookup zugänglich
+## Viele OIDs nicht per Lookup Verfügbar
 
-Es scheinen einige OIDs nicht im Rekursiven Lookup zugänglich zu sein. Bisher habe ich hier das Saugzuggebläse gefunden.
-Ein Brute-Force habe ich bisher nur sehr vorsichtig gemacht, da die Nutzung der API das ganze InfoWin sehr langsam macht (Display extremst Träge).
+Es sind einige OIDs nicht im Rekursiven Lookup zugänglich.
+Durch Brute-Force Zugriffe auf kleine Bereiche wurden bisher Etliche OID's gefunden welche allerdings bisher zum Großteil nicht zugeordnet sind. Eine Liste der bisher auf meiner Anlage entdeckten OIDs is in [oids_hidden.txt](oids_hidden.txt).
 
-Zusätzlich ist mir aufgefallen, dass die fctID der OID zumindest für den Feuerungsautomaten eine 7-Bit Addresse zu sein scheint, deren Überlauf NICHT abgefangen wird es aber nicht zu einem Crash kommt sondern die %256 OID geliefert wird. Ein Request (noch nicht klar welcher) hat das InfoWin aber auch zum Reboot gebracht.
+Bisher wurden folgende Werte zugeordnet:
 
-Gefunden wurde mittlerweile eine Liste von OIDs die weder Dokumentiert noch im Lookup sind im Feuerungsautomaten (see oids_60_arange_d0_9.txt)
+* `1/60/0/23/88/0` : Saugzuggebläse-Soll
+* `1/60/0/23/89/0` : Saugzuggebläse-Ist
+* `1/60/0/43/42/0` : Füllstand-Tagesbehälter (%)
+* `1/60/0/43/6/0` : Unterdruck-Soll (vermutlich)
+* `1/60/0/43/7/0` : Unterdruck-Ist (vermutlich)
+* `1/60/0/43/8/0` : Pelletförderung-pro-Stunde (vermutlich, kg als Einheit falsch)
+* '1/60/0/39/111/0' : könnte Ext. Wäremeanforderung Eingang (0..10V)
 
 ## Undokummentierte Parameter im Webinterface
 
