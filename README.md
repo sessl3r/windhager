@@ -122,7 +122,7 @@ Bisher wurden folgende Werte zugeordnet:
 * `1/60/0/43/6/0` : Unterdruck-Soll (vermutlich)
 * `1/60/0/43/7/0` : Unterdruck-Ist (vermutlich)
 * `1/60/0/43/8/0` : Pelletförderung-pro-Stunde (vermutlich, kg als Einheit falsch)
-* '1/60/0/39/111/0' : könnte Ext. Wäremeanforderung Eingang (0..10V)
+* `1/60/0/39/111/0` : könnte Ext. Wäremeanforderung Eingang (0..10V)
 
 ## Undokummentierte Parameter im Webinterface
 
