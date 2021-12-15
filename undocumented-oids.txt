@@ -1,3 +1,10 @@
 # Dokumentiert aber nicht im Lookup zu finden
 1/60/0/23/88/0,23-88,Saugzuggebläse-Soll,1234
 1/60/0/23/89/0,23-89,Saugzuggebläse-Ist,1234
+
+# Undokumentiert und nicht im Lookup aber bereits zugeordnet
+1/60/0/43/42/0,43-42,Füllstand-Tagesbehälter,88
+
+# Parameter zu Prüfen TODO
+1/60/0/39/111/0,39-111,0.00 -> unit=V 0..10 -> könnte Ext. Wäremeanforderung Eingang sein
+
