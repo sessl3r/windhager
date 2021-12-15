@@ -8,6 +8,7 @@ User=iot
 WorkingDirectory=/home/script/windhager
 ExecStart=/home/script/windhager/windhager-ww-override.py --windhager 192.168.178.11 --tasmota sonoff1
 Restart=always
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target

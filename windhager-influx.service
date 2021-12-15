@@ -8,6 +8,7 @@ User=iot
 WorkingDirectory=/home/script/windhager
 ExecStart=/home/script/windhager/windhager-influx.py --windhager <> --db <> --dbuser <> --dbpass <>
 Restart=always
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target
