@@ -30,21 +30,30 @@ def push_influx(db, points):
 def loop(w, db, oids):
     while True:
         points = []
-        for oid,key in oids.items():
+        for oid,entry in oids.items():
+            if 'name' in entry:
+                key = entry['name']
+            else:
+                continue
             d = w.get_datapoint(oid)
             if 'value' not in d:
                 w.log.warning(f"Invalid data for {oid}: {dp}")
                 continue
 
-            name = w.id_to_string(key.split('-')[0], key.split('-')[1])
             try:
                 value = float(d['value'])
             except:
                 continue
-            w.log.debug(f"got datapoint {name} {key} with {value}")
+            name = w.id_to_string(key.split('-')[0], key.split('-')[1])
             if name:
                 name = name.replace(' ','-')
-                points.append((f"{key}-{name}", value))
+            else:
+                if 'text' in entry:
+                    name = entry['text']
+                else:
+                    name = "unknown"
+            w.log.debug(f"got datapoint {name} {key} with {value}")
+            points.append((f"{key}-{name}", value))
 
         push_influx(db, points)
         w.log.info(f"pushed {len(points)} values to influxdb")
@@ -65,7 +74,11 @@ def main():
         lines = fd.readlines()
         for line in lines:
             split = line.split(',')
-            oids[split[0]] = split[1]
+            oids[split[0]] = {}
+            if len(split) > 1:
+                oids[split[0]]['name'] = split[1].rstrip()
+            if len(split) > 2:
+                oids[split[0]]['text'] = split[2].rstrip()
 
     w.log.info("Initialization done")
 
