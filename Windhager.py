@@ -21,6 +21,7 @@ class Windhager:
     LOOKUP_API = 'api/1.0/lookup'
     DATAPOINT_API = 'api/1.0/datapoint'
     DATAPOINTS_API = 'api/1.0/datapoints'
+    OBJECT_API = 'api/1.0/object'
 
     def __init__(self, hostname, user = 'Service', password = '123', level='INFO'):
         self._host = hostname
@@ -46,8 +47,8 @@ class Windhager:
 
         """
 
-        r = requests.get(f"http://{self._host}/{api}", params, auth = self.auth)
-        self.log.debug(f"GET http://{self._host}/{api} returned {r.status_code}")
+        r = requests.get(f"http://{self._host}/{api}", params = params, auth = self.auth)
+        self.log.debug(f"GET http://{self._host}/{api} params={params} returned {r.status_code}")
         if r.status_code != 200:
             raise Exception
         try:
@@ -118,6 +119,16 @@ class Windhager:
 
         return ret
 
+    def get_object(self, obj, cache):
+        """ Issue a request to object API
+
+        From api-docs for GET:
+            /object?OID=xx&cacheCtl={0,1}
+
+        """
+
+        return self.get(self.OBJECT_API, { 'OID': obj, 'cacheCtl': cache })
+
     def get_datapoint(self, obj):
         """ Issue a request to datapoint API
 
@@ -184,3 +195,6 @@ class Windhager:
                 return e.text.strip()
         return None
 
+    def name_to_string(self, name):
+        (gn, mn) = name.split('-')
+        return self.id_to_string(gn, mn)
