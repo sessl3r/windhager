@@ -3,34 +3,33 @@
 import argparse
 import time
 import requests
+import paho.mqtt.client as paho
 from Windhager import Windhager
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--windhager', type=str, required=True, help='Windhager IP/Host')
 parser.add_argument('--wuser', type=str, default='Service', help='Windhager Username')
 parser.add_argument('--wpass', type=str, default='123', help='Windhager Password')
-parser.add_argument('--tasmota', type=str, required=True, help='Tasmota IP/Host')
+parser.add_argument('--mqtt', type=str, required=True, help='MQTT Broker')
+parser.add_argument('--muser', type=str, required=True, help='MQTT Username')
+parser.add_argument('--mpass', type=str, required=True, help='MQTT Password')
+parser.add_argument('--mtopic', type=str, required=True, help='MQTT Topic')
 parser.add_argument('--debug', action='store_true', help='Activate Debug')
 args = parser.parse_args()
 
 CONFIG = {
-    'ww_on':        49,
-    'ww_off':       53,
-    'ww_max':       65,
-    'kessel_min':   65,
+    'ww_on':        48,
+    'ww_off':       57,
+    'ww_max':       62,
+    'kessel_min':   66,
     'kessel_max':   75,
     'leistung_min': 35,
     'leistung_max': 95
 }
 
 def get_current_state(w, last_state, leistung, kessel, ww, now):
-    # Highest prio: if WW is too hot
-    if ww > CONFIG['ww_max']:
-        w.log.info(f"WW > {CONFIG['ww_max']} -> turning OFF")
-        return 'OFF'
-
     # Kessel ist AN
-    if leistung > 0 and kessel > ww and last_state == 'OFF':
+    if leistung > 0 and kessel > ww and ww < CONFIG['ww_max'] and last_state == 'OFF':
         # Einschalten WW
         if ww < CONFIG['ww_on']:
             w.log.info(f"WW < {CONFIG['ww_on']} -> turning ON")
@@ -44,6 +43,10 @@ def get_current_state(w, last_state, leistung, kessel, ww, now):
     elif last_state == 'ON':
         # Ausschalten WW
         if leistung == 0:
+            w.log.info(f"Leistung == 0 -> turning OFF")
+            return 'OFF'
+        if ww > CONFIG['ww_max']:
+            w.log.info(f"WW > {CONFIG['ww_max']} -> turning OFF")
             return 'OFF'
         if ww > CONFIG['ww_off']:
             if kessel < CONFIG['kessel_min']:
@@ -54,17 +57,20 @@ def get_current_state(w, last_state, leistung, kessel, ww, now):
                 return 'OFF'
     return None
 
-def set_tasmota_state(w, state):
+def set_mqtt_state(w, state):
     if state not in ['ON', 'OFF']:
         w.log.info(f"unknown state {state}")
         state = 'OFF'
-    for i in range(8):
-        r = requests.get(f"http://{args.tasmota}/cm", params={'cmnd': f'Power1 {state}'})
-        if r.status_code == 200:
-            return
 
-        w.log.error(f"setting status to {state} on {args.tasmota} failed!")
-        sys.exit(1)
+    try:
+        client = paho.Client()
+        client.username_pw_set(username=args.muser, password=args.mpass)
+        client.connect(args.mqtt, keepalive=10)
+        client.publish(args.mtopic, state)
+        client.disconnect()
+    except Exception as e:
+        w.log.error(f"setting status to {state} on {args.mtopic} failed!")
+        w.log.error(f"{e}")
 
 def loop(w):
     last_state = 'OFF'
@@ -79,11 +85,11 @@ def loop(w):
 
         new_state = get_current_state(w, last_state, leistung_ist, kessel_ist, ww_ist, now)
         if new_state:
-            w.log.info(f"set {args.tasmota} to {new_state}")
+            w.log.info(f"set {args.mtopic} to {new_state}")
             if new_state != last_state:
                 last_state = new_state
         # Just set it always to be sure not to get in unknown state for some time
-        set_tasmota_state(w, last_state)
+        set_mqtt_state(w, last_state)
         time.sleep(20)
 
 def main():

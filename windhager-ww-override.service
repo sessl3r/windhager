@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=iot
 WorkingDirectory=/home/script/windhager
-ExecStart=/home/script/windhager/windhager-ww-override.py --windhager 192.168.178.11 --tasmota sonoff1
+ExecStart=/home/script/windhager/windhager-ww-override.py --windhager 192.168.178.11 --mqtt localhost --muser openhab --mpass openhab --mtopic 'cmnd/sonoff1/Power'
 Restart=always
 RestartSec=30
 
