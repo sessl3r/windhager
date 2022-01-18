@@ -56,7 +56,6 @@ def loop(w, db, oids):
             points.append((f"{key}-{name}", value))
 
         push_influx(db, points)
-        w.log.info(f"pushed {len(points)} values to influxdb")
 
         # Wait for next minute to begin
         time.sleep(5)
