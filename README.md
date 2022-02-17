@@ -122,7 +122,12 @@ Bisher wurden folgende Werte zugeordnet:
 * `1/60/0/43/6/0` : Unterdruck-Soll (vermutlich)
 * `1/60/0/43/7/0` : Unterdruck-Ist (vermutlich)
 * `1/60/0/43/8/0` : Pelletförderung-pro-Stunde (vermutlich, kg als Einheit falsch)
+
+Folgende Werte sind noch Vermutungen:
+
 * `1/60/0/39/111/0` : könnte Ext. Wäremeanforderung Eingang (0..10V)
+* `1/60/0/43/16/0` : kg seit Reinigung oder sowas? Sprang bei letzter Reinigung von ~450 auf 0, steigt seither
+* `1/60/0/43/17/0` : kg bis Reiniung oder sowas? Sprang bei letzter Reinigung von 210 auf 650, sinkt seither eq. zu 43-16
 
 ## Undokummentierte Parameter im Webinterface
 
