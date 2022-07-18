@@ -27,29 +27,36 @@ CONFIG = {
     'leistung_max': 95
 }
 
-def get_current_state(w, last_state, leistung, kessel, ww, now):
-    # Kessel ist AN
-    if leistung > 0 and kessel > ww and ww < CONFIG['ww_max'] and last_state == 'OFF':
-        # Einschalten WW
-        if ww < CONFIG['ww_on']:
-            w.log.info(f"WW < {CONFIG['ww_on']} -> turning ON")
+def get_current_state(w, last_state, leistung, kessel, ww, heizkreispumpe, now):
+    #
+    #  Pumpe ist AUS
+    #
+    if last_state == 'OFF':
+        if leistung > 0 and kessel > ww and ww < CONFIG['ww_max']:
+            if ww < CONFIG['ww_on']:
+                w.log.info(f"WW < {CONFIG['ww_on']} -> turning ON")
+                return 'ON'
+            if kessel > CONFIG['kessel_max']:
+                w.log.info(f"Kessel > {CONFIG['kessel_max']} -> turning ON")
+                return 'ON'
+            if leistung < CONFIG['leistung_min']:
+                w.log.info(f"Leistung < {CONFIG['leistung_min']} -> turning ON")
+                return 'ON'
+        # Kessel aus und Heizkreispumpe aus -> Sommerbetrieb - Restwärme nutzen
+        elif leistung == 0 and heizkreispumpe == 0 and kessel > ww:
+            w.log.info("Sommerbetrieb - Restwärme -> turning ON")
             return 'ON'
-        if kessel > CONFIG['kessel_max']:
-            w.log.info(f"Kessel > {CONFIG['kessel_max']} -> turning ON")
-            return 'ON'
-        if leistung < CONFIG['leistung_min']:
-            w.log.info(f"Leistung < {CONFIG['leistung_min']} -> turning ON")
-            return 'ON'
+    #
+    # WW Pumpe ist AN
+    #
     elif last_state == 'ON':
-        # Ausschalten WW
-        if leistung == 0:
+        if leistung == 0 and (heizkreispumpe != 0 or kessel < ww):
             w.log.info(f"Leistung == 0 -> turning OFF")
             return 'OFF'
         if ww > CONFIG['ww_max']:
             w.log.info(f"WW > {CONFIG['ww_max']} -> turning OFF")
             return 'OFF'
-        if ww > CONFIG['ww_off']:
-            if leistung > CONFIG['leistung_max']:
+        if (ww > CONFIG['ww_off']) and (leistung > CONFIG['leistung_max']):
                 w.log.info(f"Leistung > {CONFIG['leistung_max']} -> turning OFF")
                 return 'OFF'
     return None
@@ -75,12 +82,13 @@ def loop(w):
         leistung_ist = float(w.get_datapoint('1/60/0/0/9/0')['value'])
         kessel_ist = float(w.get_datapoint('1/60/0/0/7/0')['value'])
         ww_ist = float(w.get_datapoint('1/15/0/0/4/0')['value'])
+        heizkreispumpe = float(w.get_datapoint('1/15/0/1/20/0')['value'])
         now = time.localtime()
         nowstr = time.strftime("%H:%M:%S", now)
 
-        w.log.debug(f"last_state={last_state} leistung={leistung_ist} kessel={kessel_ist} ww={ww_ist}")
+        w.log.debug(f"last_state={last_state} leistung={leistung_ist} kessel={kessel_ist} ww={ww_ist} heizkreispumpe={heizkreispumpe}")
 
-        new_state = get_current_state(w, last_state, leistung_ist, kessel_ist, ww_ist, now)
+        new_state = get_current_state(w, last_state, leistung_ist, kessel_ist, ww_ist, heizkreispumpe, now)
         if new_state:
             w.log.info(f"set {args.mtopic} to {new_state}")
             if new_state != last_state:
