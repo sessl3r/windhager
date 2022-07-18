@@ -49,9 +49,6 @@ def get_current_state(w, last_state, leistung, kessel, ww, now):
             w.log.info(f"WW > {CONFIG['ww_max']} -> turning OFF")
             return 'OFF'
         if ww > CONFIG['ww_off']:
-            if kessel < CONFIG['kessel_min']:
-                w.log.info(f"Kessel < {CONFIG['kessel_min']} -> turning OFF")
-                return 'OFF'
             if leistung > CONFIG['leistung_max']:
                 w.log.info(f"Leistung > {CONFIG['leistung_max']} -> turning OFF")
                 return 'OFF'
