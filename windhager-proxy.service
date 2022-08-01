@@ -1,0 +1,15 @@
+[Unit]
+Description=Windhager-Proxy Service
+After=network.target
+
+[Service]
+Type=simple
+User=iot
+WorkingDirectory=/home/script/windhager
+ExecStart=/home/script/windhager/windhager-proxy.py --windhager 192.168.178.11 --db iot --dbuser iot --dbpass iot --mqtt localhost --muser windhager --mpass windhager
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+Alias=windhager-proxy.service
