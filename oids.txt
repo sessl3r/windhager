@@ -1,6 +1,6 @@
 1/60/0/0/7/0,0-7,Kesseltemperatur-Istwert,28.2,°C
-1/60/0/2/1/0,2-1,Betriebsphasen,4
-1/15/0/3/50/0,3-50,Betriebswahl	,1
+1/60/0/2/1/0,2-1,Betriebsphasen,4,State
+1/15/0/3/50/0,3-50,Betriebswahl,1,State
 1/15/0/2/16/0,2-16,Freigabe-starten,0
 1/15/0/5/51/0,5-51,Temperatur,59.5,°C
 1/15/0/3/4/0,3-4,Temperatur,25.0,°C
