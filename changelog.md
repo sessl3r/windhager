@@ -5,6 +5,6 @@
 * 1/15/0/101/0 Sollwert Heizbetrieb 21.0 -> 20.0
 * 1/60/0/100/4 Hysterese Brenner EIN -8 -> -12
 
-## 2022 06 03
+## 2022 08 26
 * Warmwasserprogramm 6:00 63° ; 10:00 40° (einmal aufheizen pro Tag)
 * ww-override: Im Sommerbetrieb die Restwärme des Kessels in WW pumpen hinzugefügt
