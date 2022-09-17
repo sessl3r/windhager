@@ -8,3 +8,7 @@
 ## 2022 08 26
 * Warmwasserprogramm 6:00 63° ; 10:00 40° (einmal aufheizen pro Tag)
 * ww-override: Im Sommerbetrieb die Restwärme des Kessels in WW pumpen hinzugefügt
+
+## 2021 12 11
+* ww-override: Hinzugefügt und aktiviert um Brennerstarts zu minimieren
+* Einstellungen insbesondere WW hierauf angepasst (Parameter nicht mehr klar)
