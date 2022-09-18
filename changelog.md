@@ -1,8 +1,10 @@
 # Log der Einstellungsänderungen
 
+## 2022 09 18
+* change windhager-ww-override max WW to 57
+
 ## 2022 09 17
 * 1/15/0/96/0 Betriebwahl 6 -> 1 (Heizprogramm 1)
-* 1/15/0/101/0 Sollwert Heizbetrieb 21.0 -> 20.0
 
 ## 2022 08 26
 * Warmwasserprogramm 6:00 63° ; 10:00 40° (einmal aufheizen pro Tag)

@@ -20,7 +20,7 @@ args = parser.parse_args()
 CONFIG = {
     'ww_on':        48,
     'ww_off':       54,
-    'ww_max':       60,
+    'ww_max':       57,
     'kessel_min':   65,
     'kessel_max':   75,
     'leistung_min': 40,
