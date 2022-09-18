@@ -43,14 +43,14 @@ def get_current_state(w, last_state, leistung, kessel, ww, heizkreispumpe, now):
                 w.log.info(f"Leistung < {CONFIG['leistung_min']} -> turning ON")
                 return 'ON'
         # Kessel aus und Heizkreispumpe aus -> Sommerbetrieb - Restwärme nutzen
-        elif leistung == 0 and heizkreispumpe == 0 and kessel > ww:
+        elif leistung == 0 and heizkreispumpe == 0 and kessel > ww + 5:
             w.log.info("Sommerbetrieb - Restwärme -> turning ON")
             return 'ON'
     #
     # WW Pumpe ist AN
     #
     elif last_state == 'ON':
-        if leistung == 0 and (heizkreispumpe != 0 or kessel < ww):
+        if leistung == 0 and (heizkreispumpe != 0 or kessel < ww + 3):
             w.log.info(f"Leistung == 0 -> turning OFF")
             return 'OFF'
         if ww > CONFIG['ww_max']:
