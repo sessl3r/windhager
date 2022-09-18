@@ -8,6 +8,10 @@ from Windhager import Windhager
 from influxdb import InfluxDBClient
 import paho.mqtt.client as paho
 
+MQTT_BASE_TOPIC = "stat/windhager"
+MQTT_STATE = "state"
+MQTT_LWT = "lwt"
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--windhager', type=str, required=True, help='Windhager IP/Host')
 parser.add_argument('--wuser', type=str, default='Service', help='Windhager Username')
@@ -42,14 +46,11 @@ def poll_windhager_values(w, oids):
             value = float(d['value'])
         except:
             continue
-        name = w.id_to_string(key.split('-')[0], key.split('-')[1])
-        if name:
-            name = name.replace(".", "").replace(" ", "_").replace('-', '_').replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 's')
+        #name = w.id_to_string(key.split('-')[0], key.split('-')[1])
+        if 'text' in entry:
+            name = entry['text'].replace(".", "").replace(" ", "_")
         else:
-            if 'text' in entry:
-                name = entry['text'].replace(".", "").replace(" ", "_").replace('-', '_').replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 's')
-            else:
-                name = "unknown"
+            name = "unknown"
         w.log.debug(f"got datapoint {name} {key} with {value}")
         points.append((key, name, value))
 
@@ -67,27 +68,28 @@ def influx_push(db, points):
 def mqtt_push_values(mqtt, points):
     values = {}
     for p in points:
-        text =  p[1].lower() + "_" + p[0].lower().replace("-", "_")
-        values[text] = p[2]
-    
-    logging.debug(f"MQTT push: {values}")
-    mqtt.publish(f'stat/windhager/state', json.dumps(values))
+        text = p[1].lower().replace(".", "").replace("-", "_").replace("ö", "oe").replace("ä", "ae").replace("ü", "ue").replace("ß", "s")
+        oid = p[0].lower().replace("-", "_")
+        name =  f"{text}_{oid}"
+        values[name] = p[2]
+
+    mqtt.publish(f"{MQTT_BASE_TOPIC}/{MQTT_STATE}" , json.dumps(values))
 
 def mqtt_push_discovery(mqtt, oids):
-    for k, oid in oids.items():
-        text = oid["text"].lower().replace(".", "").replace(" ", "_").replace('-', '_').replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 's')
-        oid = oid["name"].replace("-", "_")
+    for k, oidarr in oids.items():
+        text = oidarr["text"].lower().replace(".", "").replace("-", "_").replace("ö", "oe").replace("ä", "ae").replace("ü", "ue").replace("ß", "s")
+        oid = oidarr["name"].lower().replace("-", "_")
         name = f"windhager_{text}_{oid}"
-        if "einheit" in oid:
-            einheit = oid["einheit"]
+        if "einheit" in oidarr:
+            einheit = oidarr["einheit"]
         else:
             einheit = ""
         config = {
-            "~": "stat/windhager",
+            "~": MQTT_BASE_TOPIC,
             "name": name,
             "suggested_area": "Windhager",
-            "state_topic": "~/state",
-            "value_template": "{{ value_json." + text + "_" + oid + " }}"
+            "state_topic": f"~/{MQTT_STATE}",
+            "value_template": "{{ value_json['" + f"{text}_{oid}" + "'] }}"
         }
 
         if einheit == "Binary":
@@ -96,7 +98,33 @@ def mqtt_push_discovery(mqtt, oids):
             config["payload_off"] = "0"
             mqtt.publish(f'homeassistant/binary_sensor/{name}/config', json.dumps(config))
         elif einheit == "State":
-            pass
+            if text == "betriebsphasen":
+                config["value_template"] = "\
+                    {% set mapper = { \
+                        '0': 'Brenner gesperrt', \
+                        '1': 'Selbsttest', \
+                        '2': 'WE ausschalten', \
+                        '3': 'Standby', \
+                        '4': 'Brenner AUS', \
+                        '5': 'Vorspülen', \
+                        '6': 'Zündphase', \
+                        '7': 'Flammstabilisierung', \
+                        '8': 'Modulationsbetrieb', \
+                        '9': 'Kessel gesperrt', \
+                        '10': 'Standby Sperrzeit', \
+                        '11': 'Gebläse AUS', \
+                        '12': 'Verkleidungstür offen', \
+                        '13': 'Zündung bereit', \
+                        '14': 'Abbruch Zündphase', \
+                        '15': 'Anheizvorgang', \
+                        '16': 'Schichtlandung', \
+                        '17': 'Ausbrand' \
+                    } %} \
+                    {% set state = int(value_json['" + f"{text}_{oid}" + "']) %} \
+                    {{ mapper[state] if state in mapper else 'Unknown' }}"
+            else:
+                pass
+            mqtt.publish(f'homeassistant/sensor/{name}/config', json.dumps(config))
         else:
             config["unit_of_measurement"] = einheit
             mqtt.publish(f'homeassistant/sensor/{name}/config', json.dumps(config))
@@ -109,13 +137,17 @@ def mqtt_on_publish(client, userdata, result):
 def mqtt_on_message(client, userdata, message):
     pass
 
+def mqtt_on_connect(client, userdata, flags, rc):
+    logging.info("Connected to MQTT broker")
+    client.publish(f"{MQTT_BASE_TOPIC}/{MQTT_LWT}", payload="Online", qos=0, retain=True)
+
 def loop(w, db, mqtt, oids):
     last_discovery = 0
     while True:
         points = poll_windhager_values(w, oids)
         influx_push(db, points)
 
-        if (time.time() - last_discovery > 3600*8):
+        if (time.time() - last_discovery > 900):
             logging.info("Pushing discovery data")
             mqtt_push_discovery(mqtt, oids)
             last_discovery = time.time()
@@ -137,8 +169,10 @@ def main():
     mqtt = paho.Client("windhager")
     mqtt.on_publish = mqtt_on_publish
     mqtt.on_message = mqtt_on_message
+    mqtt.on_connect = mqtt_on_connect
     mqtt.username_pw_set(args.muser, args.mpass)
-    mqtt.connect(args.mqtt)
+    mqtt.will_set(f"{MQTT_BASE_TOPIC}/{MQTT_LWT}", payload="offline", retain=True, qos=0)
+    mqtt.connect(args.mqtt, keepalive=60)
 
     oids = {}
     with open(args.oids, 'r') as fd:
@@ -153,7 +187,7 @@ def main():
             if len(split) > 4:
                 oids[split[0]]['einheit'] = split[4].rstrip()
 
-    w.log.info("Initialization done")
+    logging.info("Initialization done")
 
     loop(w, db, mqtt, oids)
 
