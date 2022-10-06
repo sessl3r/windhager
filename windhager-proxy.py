@@ -178,7 +178,10 @@ def main():
     with open(args.oids, 'r') as fd:
         lines = fd.readlines()
         for line in lines:
+            line = line.split('#', 1)[0].rstrip()
             split = line.split(',')
+            if len(split) < 2:
+                continue
             oids[split[0]] = {}
             if len(split) > 1:
                 oids[split[0]]['name'] = split[1].rstrip()
