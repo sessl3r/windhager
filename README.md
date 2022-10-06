@@ -27,12 +27,12 @@ Eine Liste mit allen im Setup verfügbaren Datenpunkten kann mit dem Skript wind
 Diese Liste sollte danach ausgedünnt werden da zumindest bei mir viele Datenpunkte nicht relevant oder zum Teil auch einfach doppelt vorhanden sind.
 Beispielhaft ist die in meinem System verwendete oids.txt im Projekt hinterlegt.
 
-## windhager-influx.py
+## windhager-proxy.py
 
-Simples Skript welches die Datenpunkte welche in oids.txt (--oids) gelistet sind regelmäßig abfragt und in eine InfluxDB schreibt.
+Simples Skript welches die Datenpunkte welche in oids.txt (--oids) gelistet sind regelmäßig abfragt und an MQTT und Influx verteilt.
 In meinem Fall werden die Daten per Grafana visualisiert:
 
-Um dieses Skript der systemd automatisch zu starten kann die Datei `windhager-influx.service` genutzt werden. Dieses muss dazu nach z.B. `/etc/systemd/system/` kopiert werden.
+Um dieses Skript der systemd automatisch zu starten kann die Datei `windhager-proxy.service` genutzt werden. Dieses muss dazu nach z.B. `/etc/systemd/system/` kopiert werden.
 
 ![Grafana Beispiel](screenshots/20211129_grafana_beispiel.png)
 
@@ -144,3 +144,15 @@ Aus diesem Grund wurden per windhager-influx.py für ein paar Wochen jedgliche P
 
 Auch sehr ärgerlich: Manche Parameter bei denen 'writeProtect' = False ist lassen sich nicht ändern. Stattdessen läuft der Request in einen Timeout mit Bad Gateway Error.
 
+## Nicht abgefangene Fehlbedienungen der API
+
+Der klassiker. Datentypen werden wohl teilweise nicht geprüft und manche Anfragen gehen wohl direkt weiter auf Bussysteme.
+
+### PUT value muss String sein
+Ein PUT (z.b. http://<ip>/api/1.0/datapoint ; data = { 'OID': <oid>, 'value': <value>}) muss immer einen String als Value haben!
+Egal welcher Typ (int, enum, string, ...).Wenn es kein String ist kann sich die Heizung auch mal aufhängen. Passiert beim Versuch die Betriebswahl per Python zu ändern (enum). Ergebnis:
+
+* WebUI stürtz ab wenn man Betriebswahl danach liest da '-' nicht im Enum ist
+* InfoWin Touch lässt keine neue Auswahl der Betriebswahl mehr zu
+
+Um das zu lösen entweder per API einen richtigen Wert schicken ( "1" ) oder die Heizung neu starten!
