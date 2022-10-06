@@ -59,3 +59,4 @@
 1/60/0/43/6/0,43-6,Unterdruck-Soll,0, 
 1/60/0/43/7/0,43-7,Unterdruck-Ist,0, 
 1/60/0/43/8/0,43-8,Pelletförderung-pro-Stunde,0,kg
+1/15/0/0/1/0,00-001,Raumtemperatur-Ist,20.4,°C
