@@ -38,6 +38,29 @@ class Windhager:
         # check connectivity to device
         self.get('api-docs/')
 
+    def set(self, api, data, params = None, timeout=2):
+        """ Issue a put request to InfoWin
+
+        :param api: The API string to use
+        :param data: The Data to set
+        :param params: Parameters to add to the GET request
+        :param timeout: Timeout in seconds
+
+        """
+
+        r = requests.put(f"http://{self._host}/{api}", data = json.dumps(data), params = params, auth = self.auth)
+        self.log.debug(f"PUT http://{self._host}/{api} data={json.dumps(data)} params={params} returned {r.status_code}")
+        if r.status_code != 200:
+            raise Exception(r)
+        return r
+
+    def set_datapoint(self, oid, value):
+        data = {
+            'OID': oid,
+            'value': str(value)
+        }
+        self.set(self.DATAPOINT_API, data)
+
     def get(self, api, params = None, timeout=2):
         """ Issue a get request to InfoWin
 
@@ -138,7 +161,7 @@ class Windhager:
 
         """
 
-        return self.get(f"{self.DATAPOINT_API}/{obj}")
+        return self.get(f"{self.DATAPOINT_API}/{obj.lstrip('/')}")
 
     def get_datapoints(self):
         """ Issue a request to datapoints API
