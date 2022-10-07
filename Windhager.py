@@ -48,18 +48,18 @@ class Windhager:
 
         """
 
-        r = requests.put(f"http://{self._host}/{api}", data = json.dumps(data), params = params, auth = self.auth)
-        self.log.debug(f"PUT http://{self._host}/{api} data={json.dumps(data)} params={params} returned {r.status_code}")
+        r = requests.put(f"http://{self._host}/{api}", data = data, params = params, auth = self.auth)
+        self.log.debug(f"PUT http://{self._host}/{api} data={data} params={params} returned {r.status_code}")
         if r.status_code != 200:
             raise Exception(r)
         return r
 
     def set_datapoint(self, oid, value):
         data = {
-            'OID': oid,
+            'OID': f"/{oid.lstrip('/')}",
             'value': str(value)
         }
-        self.set(self.DATAPOINT_API, data)
+        self.set(self.DATAPOINT_API, json.dumps(data))
 
     def get(self, api, params = None, timeout=2):
         """ Issue a get request to InfoWin
