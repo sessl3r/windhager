@@ -1,112 +1,118 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.9
 
 import argparse
 import time
-import requests
+import logging
+import json
 import paho.mqtt.client as paho
-from Windhager import Windhager
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--windhager', type=str, required=True, help='Windhager IP/Host')
-parser.add_argument('--wuser', type=str, default='Service', help='Windhager Username')
-parser.add_argument('--wpass', type=str, default='123', help='Windhager Password')
-parser.add_argument('--mqtt', type=str, required=True, help='MQTT Broker')
+parser.add_argument('--mqtt', type=str, default='localhost', help='MQTT Broker')
 parser.add_argument('--muser', type=str, required=True, help='MQTT Username')
 parser.add_argument('--mpass', type=str, required=True, help='MQTT Password')
-parser.add_argument('--mtopic', type=str, required=True, help='MQTT Topic')
+parser.add_argument('--mwindhager', type=str, default='stat/windhager/state', help='MQTT Windhager')
+parser.add_argument('--mswitch', type=str, required=True, help='MQTT Switch Topic')
 parser.add_argument('--debug', action='store_true', help='Activate Debug')
 args = parser.parse_args()
 
 CONFIG = {
     'ww_on':        48,
-    'ww_off':       54,
-    'ww_max':       57,
+    'ww_off':       52,
+    'ww_max':       62,
     'kessel_min':   65,
     'kessel_max':   75,
     'leistung_min': 40,
     'leistung_max': 95
 }
 
-def get_current_state(w, last_state, leistung, kessel, ww, heizkreispumpe, now):
+def get_current_state(last_state, leistung, kessel, kessel_soll, ww, heizkreispumpe):
     #
     #  Pumpe ist AUS
     #
     if last_state == 'OFF':
-        if leistung > 0 and kessel > ww and ww < CONFIG['ww_max']:
+        if ( (leistung > 0) and (kessel > ww) and (ww < CONFIG['ww_max']) and  (kessel > (kessel_soll-2))):
             if ww < CONFIG['ww_on']:
-                w.log.info(f"WW < {CONFIG['ww_on']} -> turning ON")
+                logging.info("WW < {} -> turning ON".format(CONFIG['ww_on']))
                 return 'ON'
             if kessel > CONFIG['kessel_max']:
-                w.log.info(f"Kessel > {CONFIG['kessel_max']} -> turning ON")
+                logging.info("Kessel > {} -> turning ON".format(CONFIG['kessel_max']))
                 return 'ON'
             if leistung < CONFIG['leistung_min']:
-                w.log.info(f"Leistung < {CONFIG['leistung_min']} -> turning ON")
+                logging.info("Leistung < {} -> turning ON".format(CONFIG['leistung_min']))
                 return 'ON'
         # Kessel aus und Heizkreispumpe aus -> Sommerbetrieb - Restwärme nutzen
-        elif leistung == 0 and heizkreispumpe == 0 and kessel > ww + 5:
-            w.log.info("Sommerbetrieb - Restwärme -> turning ON")
+        elif leistung == 0 and heizkreispumpe == 0 and kessel > ww + 5 and ww < (CONFIG['ww_max'] - 4):
+            logging.info("Sommerbetrieb - Restwärme -> turning ON (leistung: {} kessel: {} ww: {})".format(leistung, kessel, ww))
             return 'ON'
     #
     # WW Pumpe ist AN
     #
     elif last_state == 'ON':
         if leistung == 0 and (heizkreispumpe != 0 or kessel < ww + 3):
-            w.log.info(f"Leistung == 0 -> turning OFF")
+            logging.info("Leistung == 0 -> turning OFF (leistung: {} kessel: {} ww: {})".format(leistung, kessel, ww))
             return 'OFF'
         if ww > CONFIG['ww_max']:
-            w.log.info(f"WW > {CONFIG['ww_max']} -> turning OFF")
+            logging.info("WW > {} -> turning OFF".format(CONFIG['ww_max']))
             return 'OFF'
-        if (ww > CONFIG['ww_off']) and (leistung > CONFIG['leistung_max']):
-                w.log.info(f"Leistung > {CONFIG['leistung_max']} -> turning OFF")
+        if (ww > CONFIG['ww_off']) and (leistung > CONFIG['leistung_min']):
+                logging.info("Leistung > {} -> turning OFF".format(CONFIG['leistung_min']))
                 return 'OFF'
     return None
 
-def set_mqtt_state(w, state):
-    if state not in ['ON', 'OFF']:
-        w.log.info(f"unknown state {state}")
-        state = 'OFF'
+def mqtt_on_connect(client, userdata, flags, rc):
+    """ on connect subscribe to updates from windhager-proxy """
+    client.subscribe(args.mwindhager)
+    logging.info("initialization done, subscribed to {}".format(args.mwindhager))
 
-    try:
-        client = paho.Client()
-        client.username_pw_set(username=args.muser, password=args.mpass)
-        client.connect(args.mqtt, keepalive=10)
-        client.publish(args.mtopic, state)
-        client.disconnect()
-    except Exception as e:
-        w.log.error(f"setting status to {state} on {args.mtopic} failed!")
-        w.log.error(f"{e}")
+def mqtt_on_message(client, userdata, msg):
+    if msg.topic == 'stat/windhager/state':
+        try:
+            data = json.loads(msg.payload.decode('utf-8'))
+        except Exception as e:
+            logging.error("Failed to parse data {} with {}".format(msg.payload, e))
+            return
+        try:
+            leistung_ist = data['aktuelle_kesselleistung_0_9']
+            kessel_ist = data['kesseltemperatur_istwert_0_7']
+            kessel_soll = data['solltemperatur_1_7']
+            ww_ist = data['aktueller_wert_0_4']
+            heizkreispumpe = data['heizkreispumpe_1_20']
+        except Exception as e:
+            logging.error("KeyError while extracting data {}".format(e))
+            return
 
-def loop(w):
-    last_state = 'OFF'
-    while True:
-        leistung_ist = float(w.get_datapoint('1/60/0/0/9/0')['value'])
-        kessel_ist = float(w.get_datapoint('1/60/0/0/7/0')['value'])
-        ww_ist = float(w.get_datapoint('1/15/0/0/4/0')['value'])
-        heizkreispumpe = float(w.get_datapoint('1/15/0/1/20/0')['value'])
-        now = time.localtime()
-        nowstr = time.strftime("%H:%M:%S", now)
+        logging.debug("last_state={} leistung={} kessel_ist={} kessel_soll={} ww={} heizkreispumpe={}".format(client.ww_state, leistung_ist, kessel_ist, kessel_soll, ww_ist, heizkreispumpe))
 
-        w.log.debug(f"last_state={last_state} leistung={leistung_ist} kessel={kessel_ist} ww={ww_ist} heizkreispumpe={heizkreispumpe}")
-
-        new_state = get_current_state(w, last_state, leistung_ist, kessel_ist, ww_ist, heizkreispumpe, now)
+        new_state = get_current_state(client.ww_state, leistung_ist, kessel_ist, kessel_soll, ww_ist, heizkreispumpe)
         if new_state:
-            w.log.info(f"set {args.mtopic} to {new_state}")
-            if new_state != last_state:
-                last_state = new_state
-        # Just set it always to be sure not to get in unknown state for some time
-        set_mqtt_state(w, last_state)
-        time.sleep(20)
+            client.ww_state = new_state
+#            logging.debug(f"new_state: {client.ww_state}")
+        if client.ww_state not in ['ON', 'OFF']:
+#            logging.info(f"unknown state {client.ww_state}, defaulting of 'OFF'")
+            client.ww_state = 'OFF'
+        try:
+            client.publish(args.mswitch, client.ww_state)
+        except Exception as e:
+            pass
+            logging.error("setting status to {} on {} failed! {}".format(client.ww_state, args.mswitch, e))
 
 def main():
-    level = 'INFO'
     if args.debug:
-        level = 'DEBUG'
-    w = Windhager(args.windhager, user=args.wuser, password=args.wpass, level=level)
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
-    w.log.info("Initialization done")
-
-    loop(w)
+    # Connect to MQTT broker
+    client = paho.Client()
+    client.on_connect = mqtt_on_connect
+    client.on_message = mqtt_on_message
+    client.username_pw_set(username=args.muser, password=args.mpass)
+    client.connect(args.mqtt)
+    # Set inital state for WW override to OFF
+    client.ww_state = 'OFF'
+    client.publish(args.mswitch, client.ww_state)
+    logging.info("Init done...")
+    client.loop_forever()
 
 if __name__ == '__main__':
     main()
-

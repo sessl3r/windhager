@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.9
 
 import time
 import json
@@ -41,16 +41,27 @@ def poll_windhager_values(w, oids):
             w.log.warning(f"Invalid data for {oid}: {dp}")
             continue
 
-        #TODO: float vs int vs string vs date?
-        try:
-            value = float(d['value'])
-        except:
-            continue
         #name = w.id_to_string(key.split('-')[0], key.split('-')[1])
         if 'text' in entry:
             name = entry['text'].replace(".", "").replace(" ", "_")
         else:
             name = "unknown"
+
+        #TODO: float vs int vs string vs date?
+        #  can not change as most value already as float in influxdb
+        try:
+            if 'minValue' in d and 'maxValue' in d:
+                if (d['minValue'] == 0 and d['maxValue'] == 1):
+                    value = int(d['value'])
+                else:
+                    value = float(d['value'])
+            else:
+                value = float(d['value'])
+        except Exception as exc:
+            w.log.warning(f"can not convert datapoint {oid}:{name} value {d['value']} {type(d['value'])}")
+            w.log.warning(f"entry: {d}")
+            w.log.warning(f"exception: {exc}")
+            continue
         w.log.debug(f"got datapoint {name} {key} with {value}")
         points.append((key, name, value))
 
@@ -75,7 +86,7 @@ def mqtt_push_values(mqtt, points):
 
     mqtt.publish(f"{MQTT_BASE_TOPIC}/{MQTT_STATE}" , json.dumps(values))
 
-def mqtt_push_discovery(mqtt, oids):
+def mqtt_push_discovery(w, mqtt, oids):
     for k, oidarr in oids.items():
         text = oidarr["text"].lower().replace(".", "").replace("-", "_").replace("ö", "oe").replace("ä", "ae").replace("ü", "ue").replace("ß", "s")
         oid = oidarr["name"].lower().replace("-", "_")
@@ -87,43 +98,35 @@ def mqtt_push_discovery(mqtt, oids):
         config = {
             "~": MQTT_BASE_TOPIC,
             "name": name,
-            "suggested_area": "Windhager",
+            "device": {
+                "model": "BioWin2",
+                "identifiers": MQTT_BASE_TOPIC,
+                "name": "Windhager"
+            },
+            "unique_id": f"{MQTT_BASE_TOPIC}" + text,
             "state_topic": f"~/{MQTT_STATE}",
             "value_template": "{{ value_json['" + f"{text}_{oid}" + "'] }}"
         }
 
         if einheit == "Binary":
             config["device_class"] = "power"
-            config["payload_on"] = "1"
-            config["payload_off"] = "0"
+            config["payload_on"] = "1.0"
+            config["payload_off"] = "0.0"
             mqtt.publish(f'homeassistant/binary_sensor/{name}/config', json.dumps(config))
         elif einheit == "State":
             if text == "betriebsphasen":
                 config["value_template"] = "\
-                    {% set mapper = { \
-                        '0': 'Brenner gesperrt', \
-                        '1': 'Selbsttest', \
-                        '2': 'WE ausschalten', \
-                        '3': 'Standby', \
-                        '4': 'Brenner AUS', \
-                        '5': 'Vorspülen', \
-                        '6': 'Zündphase', \
-                        '7': 'Flammstabilisierung', \
-                        '8': 'Modulationsbetrieb', \
-                        '9': 'Kessel gesperrt', \
-                        '10': 'Standby Sperrzeit', \
-                        '11': 'Gebläse AUS', \
-                        '12': 'Verkleidungstür offen', \
-                        '13': 'Zündung bereit', \
-                        '14': 'Abbruch Zündphase', \
-                        '15': 'Anheizvorgang', \
-                        '16': 'Schichtlandung', \
-                        '17': 'Ausbrand' \
-                    } %} \
+                    {% set mapper = {'0': 'Brenner gesperrt', '1': 'Selbsttest', '2': 'WE ausschalten', '3': 'Standby', '4': 'Brenner AUS', '5': 'Vorspülen', '6': 'Zündphase', '7': 'Flammenstabilisierung', '8': 'Modulationsbetrieb', '9': 'Kessel gesperrt', '10': 'Standby Sperrzeit', '11': 'Gebläse AUS', '12': 'Verkleidungstür offen', '13': 'Zündung bereit', '14': 'Abbruch Zündphase', '15': 'Anheizvorgang', '16': 'Schichtladung', '17': 'Ausbrand'} %} \
                     {% set state = int(value_json['" + f"{text}_{oid}" + "']) %} \
                     {{ mapper[state] if state in mapper else 'Unknown' }}"
+            elif text == "betriebswahl":
+                config["value_template"] = "\
+                    {% set mapper = {'0': 'Standby', '1': 'Heizprogramm 1', '2': 'Heizprogramm 2', '3': 'Heizprogramm 3', '4': 'Heizbetrieb', '5': 'Absenkbetrieb', '6': 'Warmwasserbetrieb'} %} \
+                    {% set state = int(value_json['" + f"{text}_{oid}" + "']) %} \
+                    {{ mapper[state] if state in mapper else 'Unknown' }}"                
             else:
-                pass
+                logging.warning(f"Unknwon state variable: {oidarr}")
+                continue
             mqtt.publish(f'homeassistant/sensor/{name}/config', json.dumps(config))
         else:
             config["unit_of_measurement"] = einheit
@@ -135,7 +138,37 @@ def mqtt_on_publish(client, userdata, result):
     pass
 
 def mqtt_on_message(client, userdata, message):
-    pass
+    w = client.windhager
+    try:
+        data = json.loads(message.payload)
+    except Excetion as e:
+        logging.error(f"Malformed JSON data {message.payload}")
+        return
+    if message.topic == "windhager/put/datapoint":
+        if not 'OID' in data:
+            logging.error(f"No OID in data {data}")
+            return
+        if not 'value' in data:
+            logging.error(f"No value in data {data}")
+            return
+        oid = data['OID']
+        value = data['value']
+        if len(oid.split('/')) < 5:
+            logging.error(f"Malformed OID '{oid}'")
+            return
+        try:
+            logging.info(f"old value {oid} = {w.get_datapoint(oid)['value']}")
+        except:
+            logging.error(f"Failed to get datapoint for OID {oid}")
+            return
+
+        try:
+            w.set_datapoint(oid, value)
+        except:
+            logging.error(f"Failed to set datapoint for OID {oid} to {value}")
+            return
+
+        logging.info(f"new value {oid} = {value}")
 
 def mqtt_on_connect(client, userdata, flags, rc):
     logging.info("Connected to MQTT broker")
@@ -149,7 +182,7 @@ def loop(w, db, mqtt, oids):
 
         if (time.time() - last_discovery > 900):
             logging.info("Pushing discovery data")
-            mqtt_push_discovery(mqtt, oids)
+            mqtt_push_discovery(w, mqtt, oids)
             last_discovery = time.time()
 
         mqtt_push_values(mqtt, points)
@@ -167,12 +200,14 @@ def main():
     w = Windhager(args.windhager, user=args.wuser, password=args.wpass, level=level)
     db = InfluxDBClient(args.influx, args.influxport, database=args.db, username=args.dbuser, password=args.dbpass)
     mqtt = paho.Client("windhager")
+    mqtt.windhager = w
     mqtt.on_publish = mqtt_on_publish
     mqtt.on_message = mqtt_on_message
     mqtt.on_connect = mqtt_on_connect
     mqtt.username_pw_set(args.muser, args.mpass)
     mqtt.will_set(f"{MQTT_BASE_TOPIC}/{MQTT_LWT}", payload="offline", retain=True, qos=0)
     mqtt.connect(args.mqtt, keepalive=60)
+    mqtt.subscribe('windhager/put/datapoint')
 
     oids = {}
     with open(args.oids, 'r') as fd:
@@ -192,8 +227,8 @@ def main():
 
     logging.info("Initialization done")
 
+    mqtt.loop_start()
     loop(w, db, mqtt, oids)
 
 if __name__ == '__main__':
     main()
-

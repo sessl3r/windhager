@@ -39,7 +39,7 @@
 
 # Raumtemperatureinfluss
 1/15/0/1/1/0,01-001,Raumtemperatur-Soll,20.4,°C
-1/15/0/0/1/0,00-001,Raumtemperatur-Ist,20.4,°C
+#1/15/0/0/1/0,00-001,Raumtemperatur-Ist,20.4,°C
 
 # Unused
 #1/60/0/43/6/0,43-6,Unterdruck-Soll,0, 

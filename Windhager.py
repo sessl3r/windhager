@@ -27,7 +27,8 @@ class Windhager:
         self._host = hostname
         self._user = user
         self._password = password
-        self._xml = None
+        self._xml_ident = None
+        self._xml_enum = None
         self.auth = HTTPDigestAuth(user, password)
 
         # configure logging
@@ -47,19 +48,11 @@ class Windhager:
         :param timeout: Timeout in seconds
 
         """
-
         r = requests.put(f"http://{self._host}/{api}", data = data, params = params, auth = self.auth)
         self.log.debug(f"PUT http://{self._host}/{api} data={data} params={params} returned {r.status_code}")
         if r.status_code != 200:
             raise Exception(r)
         return r
-
-    def set_datapoint(self, oid, value):
-        data = {
-            'OID': f"/{oid.lstrip('/')}",
-            'value': str(value)
-        }
-        self.set(self.DATAPOINT_API, json.dumps(data))
 
     def get(self, api, params = None, timeout=2):
         """ Issue a get request to InfoWin
@@ -69,15 +62,22 @@ class Windhager:
         :param timeout: Timeout in seconds
 
         """
-
         r = requests.get(f"http://{self._host}/{api}", params = params, auth = self.auth)
         self.log.debug(f"GET http://{self._host}/{api} params={params} returned {r.status_code}")
         if r.status_code != 200:
-            raise Exception
+            raise Exception(r)
         try:
             return json.loads(r.text)
         except:
             return r.text
+
+    def set_datapoint(self, oid, value):
+        """ Set a given oid to a new value """
+        data = {
+            'OID': f"/{oid.lstrip('/')}",
+            'value': str(value)
+        }
+        self.set(self.DATAPOINT_API, json.dumps(data))
 
     def get_lookup(self, obj = None):
         """ Issue a request to lookup API
@@ -85,7 +85,6 @@ class Windhager:
         From api-docs for GET:
             lookup/{subnetId}/{nodeId}/{fctNV}/0/{nvIndex}
         """
-
         if obj:
             return self.get(f"{self.LOOKUP_API}/{obj}")
         else:
@@ -145,11 +144,12 @@ class Windhager:
     def get_object(self, obj, cache):
         """ Issue a request to object API
 
+        TODO: How to use this? Never done so far
+
         From api-docs for GET:
             /object?OID=xx&cacheCtl={0,1}
 
         """
-
         return self.get(self.OBJECT_API, { 'OID': obj, 'cacheCtl': cache })
 
     def get_datapoint(self, obj):
@@ -160,7 +160,6 @@ class Windhager:
             /datapoint/{subnetId}/{nodeId}/{fctNV}/0/{nvIndex}/0
 
         """
-
         return self.get(f"{self.DATAPOINT_API}/{obj.lstrip('/')}")
 
     def get_datapoints(self):
@@ -170,54 +169,44 @@ class Windhager:
             I did not get this working but always got Bad Gateway Errors. Need to revisit!
 
         """
-
         return self.get(f"{self.DATAPOINTS_API}")
 
-    def get_datapoints_with_name(self):
-        """ Get all (cached) datapoints and lookup the name -> text in the XML file """
-        dps = get_datapoints()
-        res = []
-        for dp in dps:
-            name = ""
-            value = ""
-            oid = ""
-            if 'name' not in dp:
-                res.append(dp)
-                continue
-            name = p['name']
-            try:
-                gN = int(p['name'].split('-')[0])
-                mN = int(p['name'].split('-')[1])
-            except:
-                self.log.error(f"Malformed name: '{p['name']}' in datapoint {dp}")
-
-            text = self.id_to_string(gN, mN)
-            if text:
-                p['text'] = text
-            res.append(dp)
-        return res
-
     @property
-    def xml(self):
+    def xml_ident(self):
         """ Retrieve VarIdentTexte as parsed XML """
-        if not self._xml:
+        if not self._xml_ident:
             resp = self.get('res/xml/VarIdentTexte_de.xml')
             if not resp:
                 self.log.error("Failed to get VarIdentTexte_de.xml")
             else:
-                self._xml = etree.fromstring(resp.encode('utf-8'))
-        return self._xml
+                self._xml_ident = etree.fromstring(resp.encode('utf-8'))
+        return self._xml_ident
+
+    @property
+    def xml_enum(self):
+        """ Retrieve AufzaehlTexte_de as parsed XML """
+        if not self._xml_enum:
+            resp = self.get('res/xml/AufzaehlTexte_de.xml')
+            if not resp:
+                self.log.error("Failed to get AufzaehlTexte_de.xml")
+            else:
+                self._xml_enum = etree.fromstring(resp.encode('utf-8'))
+        return self._xml_enum
 
     def id_to_string(self, gn, mn):
         """ Convert groupNr + memberNr to Text found in XML file if any """
-        gn = int(gn)
-        mn = int(mn)
-        e = self.xml.find('gn[@id="' + str(gn) + '"]/mn[@id="' + str(mn) + '"]')
+        e = self.xml_ident.find('gn[@id="' + str(gn) + '"]/mn[@id="' + str(mn) + '"]')
         if e is not None:
             if e.text is not None:
                 return e.text.strip()
-        return None
+        return ""
 
-    def name_to_string(self, name):
-        (gn, mn) = name.split('-')
-        return self.id_to_string(gn, mn)
+    def id_to_enum(self, gn, mn):
+        """ Return a list of enum meanings from XML file if any """
+        enum = self.xml_enum.findall(f'gn[@id="{str(gn)}"]/mn[@id="{str(mn)}"]/')
+        if enum is None:
+            return None
+        ret = {}
+        for e in enum:
+            ret[e.attrib['id']] = e.text
+        return ret
