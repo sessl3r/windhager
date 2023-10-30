@@ -9,6 +9,11 @@ bzw. wenn nur über zugängliche API's welche auch Dokumentiert sind.
 
 ![BioWin2 Touch](screenshots/biowin2_touch.jpg)
 
+Dieses System nutzt als Zugangspunkt das LAN-Interface des InfoWin-Touch.
+Sollte die myComfort-App in Benutzung sein, kann die API (vermutlich, nicht
+getestet) nicht verwendet werden, da das Passwort in diesem Fall von Windhager
+geändert wird.
+
 ## Zugangsdaten
 
 Laut Anleitung, default:
