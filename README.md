@@ -14,6 +14,16 @@ Sollte die myComfort-App in Benutzung sein, kann die API (vermutlich, nicht
 getestet) nicht verwendet werden, da das Passwort in diesem Fall von Windhager
 geändert wird.
 
+## Zugriff auf das Webinterface
+
+Dieses Skript verwendet eine API von Windhager welches auch von deren
+Webinterface verwendet wird. Um zu testen ob der Zugang mit den unten genannten
+Zugangsdaten (oder anderen) funktioniert, kann in einem Webbrowser auf
+http://<ip-der-heizung> gebrowst werden. Das Interface sollte wie folgt
+aussehen.
+
+![Webinterface](screenshots/20211203_webif_unbekannt.png)
+
 ## Zugangsdaten
 
 Laut Anleitung, default:
