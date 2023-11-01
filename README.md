@@ -103,7 +103,15 @@ Noch zu untersuchen ist wie der Pelletverbrauch sich im Vergleich zu vorher entw
 
 ![Erste zwei Tage](screenshots/20211211_ww_override.png)
 
+### Stand Ende 2023
 
+Nachdem das Skript nun eine gute Weile bei uns im Einsatz ist und auch weiter
+auf unsere Bedürfnisse optimiert wurde sieht man in den Grafen deutlich die
+Erfolge. Im folgenden Diagramm dargestellt anhand der täglichen Betriebsstunden
+und Starts. Insbesondere die Starts sind deutlich zurück gegangen was neben der
+Verbrauchsoptimierung eines der primären Ziele war.
+
+![Was bringts](screenshots/windhager_brennerstarts_betriebsstunden_pro_tag.png)
 
 # Bekannte Probleme
 
