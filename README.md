@@ -31,6 +31,8 @@ Laut Anleitung, default:
 * User: User ; Password: 123
 * User: Service ; Password: 123
 
+**Wichtig** Es kann entweder die Windhager myConnect-App oder die API genutzt werden, da Windhager bei Verwendung der App das Passwort ändert!
+
 # Logging
 
 Das wichtigste Thema dieses Projekts ist das Logging der Daten der Heizung um diese evtl. zu optimieren oder zumindest Probleme zu erkennen.
