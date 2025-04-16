@@ -115,6 +115,24 @@ Verbrauchsoptimierung eines der primären Ziele war.
 
 ![Was bringts](screenshots/windhager_brennerstarts_betriebsstunden_pro_tag.png)
 
+### Stand Anfang 2025
+
+Nach weiterer Laufzeit des Skriptes ist für mich klar, dass der Ansatz sowohl
+die Starts deutlichst reduziert also auch den Verbrauch optimiert.
+
+In den letzten Jahren wurden im Winter 2.12 Starts/Tag erreicht. Im Sommer 1.13
+Starts/Tag. Die leichte Abweichung nach oben kommt eigentlich immer dann
+zustande, wenn unter Tags mal morgens und abends viel WW gebraucht wird.
+
+Der Verbrauch hat sich noch deutlicher verbessert obwohl wir nicht weniger
+heizen (eher mehr). Im Schnitt hatten wir vor der Optimierung 3.04 Tonnen/Jahr
+und sind mittlerweile bei 2.49 Tonnen/Jahr.
+
+Hier muss man dazusagen, dass 2021 ein eher kaltes Jahr war (Jahresschnitt laut
+Heizungssensor 10.3°C) aber dafür 2020 ein eher warmes Jahr (Jahresschnitt laut
+Heizungssensor 11.7°C). Die Jahre 2022 bis 2024 waren im Schnitt bei 11.5 -
+11.9°C.
+
 # Bekannte Probleme
 
 Hier werden bisher beobachtete Eigenheiten bzw. Probleme mit der Heizung aufgelistet und falls vorhanden Lösungen beschrieben.
